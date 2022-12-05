@@ -1,0 +1,293 @@
+
+REPORT Z_MA_IW1976767015_T2.
+
+
+
+*-----------------------------------------------------------------
+* global data declarations
+*-----------------------------------------------------------------
+
+TYPES:
+
+  BEGIN OF node_type, "Deklarieren Datentyp
+    node_id   TYPE i,
+    parent_id TYPE i,
+    deko(10)  TYPE c,
+  END OF node_type.
+
+DATA:
+  gs_tree                  TYPE node_type,"Anlegen von Globalen Strukturen => Zugriff von überall im Programm
+  gt_tree                  TYPE SORTED TABLE OF node_type WITH UNIQUE KEY node_id,"Globale Tabelle mit Werten von Node Type
+
+  gr_o_random_object       TYPE REF TO cl_abap_random_int,"Globale Random Variable mit ABAP Standardfuntkion (Tiefe; Sterne; Kugeln)
+  gr_o_random_object_width TYPE REF TO cl_abap_random_int,"Globale Random Variable mit ABAP Standardfuntkion (Breite)
+  gv_seed                  TYPE i,"Globale Variable Zufällige die Grundlage für Random ist
+  gv_current_node_id       TYPE i VALUE 0."Nachfolger
+
+*-----------------------------------------------------------------
+* selection screen
+*-----------------------------------------------------------------
+
+SELECTION-SCREEN BEGIN OF BLOCK baum_tiefe " Aufrufen eigenstädiger Selektionsbilder
+    WITH FRAME TITLE text-b01.
+PARAMETERS:
+  p_min_t TYPE i DEFAULT 1,
+  p_max_t TYPE i DEFAULT 1.
+SELECTION-SCREEN END OF BLOCK baum_tiefe.
+
+SELECTION-SCREEN BEGIN OF BLOCK baum_breite
+    WITH FRAME TITLE text-b02.
+PARAMETERS:
+  p_min_b TYPE i DEFAULT 1,
+  p_max_b TYPE i DEFAULT 1.
+SELECTION-SCREEN END OF BLOCK baum_breite.
+
+SELECTION-SCREEN BEGIN OF BLOCK prozent"P für Nachfolger
+    WITH FRAME TITLE text-b03.
+PARAMETERS:
+  p_wsk TYPE i DEFAULT 50.
+SELECTION-SCREEN END OF BLOCK prozent.
+
+SELECTION-SCREEN BEGIN OF BLOCK knoten"P für Kugeln
+    WITH FRAME TITLE text-b04.
+PARAMETERS:
+  p_kugel TYPE i DEFAULT 50.
+SELECTION-SCREEN END OF BLOCK knoten.
+
+SELECTION-SCREEN BEGIN OF BLOCK button
+    WITH FRAME TITLE text-b05.
+PARAMETERS:
+  rb1 RADIOBUTTON GROUP g1 DEFAULT 'X',
+  rb2 RADIOBUTTON GROUP g1,
+  rb3 RADIOBUTTON GROUP g1.
+SELECTION-SCREEN END OF BLOCK button.
+
+*-----------------------------------------------------------------
+* at selection screen
+*-----------------------------------------------------------------
+AT SELECTION-SCREEN."Festlegen der Abbruchbedingungen
+IF p_kugel = 0.
+  MESSAGE 'Die Kugel Wahrscheinlichkeit darf nicht 0 sein' TYPE 'I'.
+  MESSAGE 'Die Kugel Wahrscheinlichkeit darf nicht 0 sein' TYPE 'E'.
+ENDIF.
+
+IF p_max_t = 0 OR p_max_b = 0.
+  MESSAGE 'Das Maximum darf nicht 0 sein.' TYPE 'I'.
+  MESSAGE 'Das Maximum darf nicht 0 sein.' TYPE 'E'.
+ENDIF.
+
+IF  p_min_t < 0 OR p_max_t < 0 OR  p_min_b < 0 OR p_max_b < 0 OR p_kugel < 0 OR p_wsk < 0.
+  MESSAGE 'Der Wert darf nicht negativ sein' TYPE 'I'.
+  MESSAGE 'Der Wert darf nicht negativ sein' TYPE 'E'.
+ENDIF.
+
+IF p_min_t > p_max_t OR p_min_b > p_max_b.
+  MESSAGE 'Das Minimum darf nicht größer sein als das Maximum' TYPE 'I'.
+  MESSAGE 'Das Minimum darf nicht größer sein als das Maximum' TYPE 'E'.
+ENDIF.
+
+AT SELECTION-SCREEN ON p_max_t.
+  IF p_max_t > 15.
+    MESSAGE 'Die Maximale Tiefe darf nicht größer als 15 sein' TYPE 'I'.
+    MESSAGE 'Die Maximale Tiefe darf nicht größer als 15 sein' TYPE 'E'.
+  ENDIF.
+
+AT SELECTION-SCREEN ON p_max_b.
+  IF p_max_b > 15.
+    MESSAGE 'Die Maximale Breite darf nicht größer als 15 sein' TYPE 'I'.
+    MESSAGE 'Die Maximale Breite darf nicht größer als 15 sein' TYPE 'E'.
+  ENDIF.
+
+*-----------------------------------------------------------------
+* START-OF-SELECTION.
+*-----------------------------------------------------------------
+
+START-OF-SELECTION.
+
+  SET TITLEBAR 'TITELAPL'. "Anlegen GUI Titelbar und Status
+  SET PF-STATUS 'STATUS100'.
+
+  gv_seed = cl_abap_random=>seed( )."Zufallszahl mit ABAP Standadfunktion erzeugen(Tiefe;Kugeln)
+
+  cl_abap_random_int=>create(" Aufruf Standardfunktion, die 3 Parameter entgegen nimmt
+    EXPORTING
+      seed = gv_seed
+      min = 1
+      max = 100
+    RECEIVING"prng Output von create und wir in unsere Globale Random Variable gespeichert
+      prng = gr_o_random_object
+  ).
+
+  gv_seed = cl_abap_random=>seed( )."...(Breite)
+
+  cl_abap_random_int=>create(
+    EXPORTING
+      seed = gv_seed
+      min = p_min_b
+      max = p_max_b
+    RECEIVING
+      prng = gr_o_random_object_width
+  ).
+
+  gs_tree-node_id = 1."Erzeugen Root Knoten
+  gs_tree-parent_id = 1.
+  gv_current_node_id = 2.
+  APPEND gs_tree TO gt_tree.
+
+  PERFORM createsubtree USING 1 0 p_wsk."Startpunkt für Baumerzeugung/ Erzeugen Unterbaum für aktuellen Knoten
+
+  IF rb1 IS NOT INITIAL."Gewählte Startansicht anzeigen/ Auswahlboxen
+    PERFORM uebersicht_anzeigen USING 1 0.
+
+  ENDIF.
+
+
+*-----------------------------------------------------------------
+* AT USER-COMMAND
+*-----------------------------------------------------------------
+
+AT USER-COMMAND.
+  CASE sy-ucomm.
+    WHEN 'BAUM1'.
+      sy-lsind = 0.   " Setze Variable auf 0 zurück, wenn zwischen den Ansichten gewechselt wird/ Rücksetzen Navi-Historie
+      PERFORM uebersicht_anzeigen USING 1 0.
+
+  ENDCASE.
+
+*-----------------------------------------------------------------
+* AT LINE-SELECTION
+*-----------------------------------------------------------------
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  CREATESUBTREE
+*&---------------------------------------------------------------------*
+FORM createsubtree USING knoten_id baum_tiefe wsk. "Definition der Funktion createsubtree
+
+  DATA:
+    lv_random TYPE i." Lokakle Random Variable
+
+  IF p_min_t > baum_tiefe.
+    PERFORM generatechildnodes USING knoten_id baum_tiefe." Ist min Baumtiefe nicht erreicht geniere einen neuen Knoten
+
+  ELSEIF p_max_t = baum_tiefe."Entspricht max Baumtiefe der vom Nuter festgelegten Baumtiefe => Blatt => erzeugen Deko
+    CLEAR gs_tree."Leeren Arbeitsvariable
+
+    READ TABLE gt_tree INTO gs_tree WITH TABLE KEY node_id = knoten_id."Einlesen aktueller Knoten in Arbeitsvariable
+    lv_random = gr_o_random_object->get_next( )."Liefern nächster Zuafallszahl
+    IF lv_random >= p_kugel.
+      gs_tree-deko = 'Stern'.
+    ELSE.
+      gs_tree-deko = 'Kugel'.
+    ENDIF.
+
+    MODIFY TABLE gt_tree FROM gs_tree."Uberschreiben Tabellenzeile mit Deko
+
+  ELSEIF baum_tiefe >= p_min_t AND baum_tiefe <= p_max_t."Baumteife ist zwischen min und max
+    lv_random = gr_o_random_object->get_next( )."Liefern nächster Zufallszahlt
+    IF lv_random >= p_wsk."Zufallszahl ist gößer gleich P für Nachfolger => Blatt Deko erzeugen
+      CLEAR gs_tree.
+
+      READ TABLE gt_tree INTO gs_tree WITH TABLE KEY node_id = knoten_id.
+      lv_random = gr_o_random_object->get_next( ).
+      IF lv_random >= p_kugel.
+        gs_tree-deko = 'Stern'.
+      ELSE.
+        gs_tree-deko = 'Kugel'.
+      ENDIF.
+
+      MODIFY TABLE gt_tree FROM gs_tree.
+
+    ELSE.
+      PERFORM generatechildnodes USING knoten_id baum_tiefe." Zufallszahl ist nicht gößer gleich P für Nachfolger => Erzeuge weiteren durch Unterprogramm
+    ENDIF.
+  ELSE.
+    WRITE: / 'Es ist ein Fehler aufgetreten.'.
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  GENERATECHILDNODES
+*&---------------------------------------------------------------------*
+FORM generatechildnodes USING parent_id baum_tiefe. "Erzeugen weiteren Knoten/Nachfolger
+
+  DATA:
+    lv_random          TYPE i VALUE 0,"Lokale Variable zum Speicher der Zufallszahl
+    lv_neue_baum_tiefe TYPE i,"Variable um Eingabeparameter hochzusetzen
+    lv_neue_node_id    TYPE i."Variable für Rekursiven Aufruf createsubtree
+
+  lv_random  = gr_o_random_object_width->get_next( )."Liefert Breite für den aktuellen Knoten
+
+  WHILE lv_random  > 0.
+
+    CLEAR gs_tree.
+    gs_tree-node_id = gv_current_node_id.
+    gs_tree-parent_id = parent_id."Oben generierte Knoten
+    gv_current_node_id = gv_current_node_id + 1."Zähler hochsetzen
+    APPEND gs_tree TO gt_tree."Einfügen in Tabelle
+
+    lv_neue_baum_tiefe = baum_tiefe + 1.
+
+    lv_neue_node_id = gs_tree-node_id ."ID des eben erzeugten Knotens
+    PERFORM createsubtree USING lv_neue_node_id lv_neue_baum_tiefe p_wsk."Aufruf Funktion createsubtree
+
+    lv_random = lv_random - 1."Randomwerte um einen runter setzen => Abbruchbedingung
+  ENDWHILE.
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*&      Form  UEBERSICHT_ANZEIGEN
+*&---------------------------------------------------------------------*
+FORM uebersicht_anzeigen USING knoten_id ebene."Baumanzeige
+
+  DATA schicht TYPE i.
+
+  IF ebene = 0.
+    WRITE: / 'Baumübersicht' COLOR COL_GROUP INTENSIFIED OFF INVERSE.
+    ULINE.
+    CLEAR gs_tree.
+  ENDIF.
+
+  schicht = ebene.
+
+  WHILE schicht > 0.
+    IF schicht = ebene.
+      WRITE: /.
+    ELSE.
+
+      WRITE: '     ' NO-GAP.
+    ENDIF.
+    schicht = schicht - 1.
+  ENDWHILE.
+
+  IF schicht = ebene.
+    WRITE: /'___' NO-GAP.
+    READ TABLE gt_tree INTO gs_tree WITH TABLE KEY node_id = knoten_id.
+  ELSE.
+    WRITE: '  |___' NO-GAP.
+
+  ENDIF.
+
+  IF gs_tree-deko = 'Stern' OR gs_tree-deko = 'Kugel'.
+    FORMAT HOTSPOT ON.
+    FORMAT COLOR 5 INTENSIFIED OFF.
+    WRITE: ' Knoten:' NO-GAP , knoten_id LEFT-JUSTIFIED." NO-GAP => keine Lücke
+    HIDE: gs_tree-node_id.
+    FORMAT COLOR OFF.
+    FORMAT HOTSPOT OFF.
+  ELSE.
+    WRITE: ' Knoten: ', knoten_id LEFT-JUSTIFIED.
+  ENDIF.
+
+  schicht = ebene + 1."Variable hochsetzen
+
+  LOOP AT gt_tree INTO gs_tree WHERE parent_id = knoten_id AND node_id <> knoten_id."Holen aller Knoten bei den b der aktuellen Knoten der Parent ist
+    PERFORM uebersicht_anzeigen USING gs_tree-node_id schicht."Aufruf Übersicht
+  ENDLOOP.
+
+  CLEAR gs_tree.
+ENDFORM.

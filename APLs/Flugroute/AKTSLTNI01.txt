@@ -1,0 +1,25 @@
+*----------------------------------------------------------------------*
+***INCLUDE MZ_MA_IW1978797_APL_AKTSLTNI01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  AKTUALISIEREN_IT_SLTN  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE AKTUALISIEREN_IT_SLTN INPUT.
+
+ MOVE-CORRESPONDING ZMAIW1978797SLTN to SCHLITTEN_WA.
+ MODIFY SCHLITTEN_IT_TC FROM SCHLITTEN_WA INDEX SCHLITTEN_TC-CURRENT_LINE.
+
+ DATA ADDED_KNZ TYPE SCHLITTEN_TC_TYPE-KENNZEICHEN.
+ CLEAR ADDED_KNZ.
+
+ SELECT SINGLE KENNZEICHEN FROM ZMAIW1978797SLTN INTO @ADDED_KNZ WHERE KENNZEICHEN = @SCHLITTEN_WA-KENNZEICHEN AND SCHLITTEN_ID <> @SCHLITTEN_WA-SCHLITTEN_ID.
+
+MODIFY ZMAIW1978797SLTN FROM SCHLITTEN_WA.
+ IF ok_code <> 'VIEW_ADD_SLT'.
+    MESSAGE 'Schlitten wurde erfolgreich aktualisiert' TYPE 'S'.
+ ENDIF.
+
+
+ENDMODULE.

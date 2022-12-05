@@ -1,0 +1,13 @@
+*----------------------------------------------------------------------*
+***INCLUDE MZ_MA_IW1978797_APL_APL_IT001.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module MZ_MA_IW1978797_APL_IT001 OUTPUT
+*&---------------------------------------------------------------------*
+*&    text
+*&---------------------------------------------------------------------*
+  MODULE LADEN_IT_FLUG OUTPUT.
+ SELECT * FROM ZMAIW1978797FLGD INTO CORRESPONDING FIELDS OF TABLE flug_it_tc.
+ DESCRIBE TABLE flug_it_tc LINES FLUEGE_TC-lines.
+ SORT FLUG_IT_TC BY START_DAT ASCENDING.
+ ENDMODULE.

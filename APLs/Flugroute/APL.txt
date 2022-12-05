@@ -1,0 +1,54 @@
+*&---------------------------------------------------------------------*
+*& Modulpool SAPMZ_MA_IW1978797_APL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+
+INCLUDE MZ_MA_IW1978797_TOP.
+
+INCLUDE MZ_MA_IW1978797_APL_F01.
+
+*STATUS100
+INCLUDE mz_ma_iw1978797_apl_o02.
+*STATUS200
+INCLUDE mz_ma_iw1978797_apl_o03.
+*STATUS300
+*INCLUDE mz_ma_iw1978797_apl_status003.
+
+*TC_ZEILE LADEN
+INCLUDE mz_ma_iw1978797_apl_o04.
+
+
+*FORM ADD SCHLITTEN
+INCLUDE mz_ma_iw1978797_apl_f02.
+
+INCLUDE mz_ma_iw1978797_apl_status0003.
+
+INCLUDE mz_ma_iw1978797_apl_apl_it001.
+
+INCLUDE mz_ma_iw1978797_apl_ldn_it002.
+
+INCLUDE mz_ma_iw1978797_apl_aktflgi01.
+
+INCLUDE mz_ma_iw1978797_apl_aktsltni01.
+
+INCLUDE mz_ma_iw1978797_apl_userci01.
+
+INCLUDE mz_ma_iw1978797_apl_userci02.
+
+INCLUDE mz_ma_iw1978797_apl_userci03.
+
+*INCLUDE mz_ma_iw1978797_apl_i04.
+
+INCLUDE mz_ma_iw1978797_apl_userci04.
+
+INCLUDE mz_ma_iw1978797_apl_userci05.
+
+INCLUDE mz_ma_iw1978797_apl_oki01.
+
+INCLUDE mz_ma_iw1978797_apl_status0004.
+
+INCLUDE mz_ma_iw1978797_apl_status0005.
+
+INCLUDE mz_ma_iw1978797_apl_sltn_tco05.

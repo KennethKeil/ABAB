@@ -1,0 +1,58 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1976878_BELEG
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1976878_BELEG.
+
+DATA WA_MAPL TYPE MAPL.
+DATA WA_PLFL TYPE PLFL.
+DATA WA_PLPO TYPE PLPO.
+
+DATA Stammknoten TYPE STRING.
+DATA Parallelknoten TYPE STRING.
+CONSTANTS Luecke TYPE STRING VALUE ' '.
+
+PARAMETERS P_MATNR LIKE MAPL-MATNR.
+
+Select * from MAPL INTO CORRESPONDING FIELDS OF @WA_MAPL WHERE MATNR = @P_MATNR.
+  ENDSELECT.
+
+Select * from PLFL INTO CORRESPONDING FIELDS OF @WA_PLFL WHERE PLNNR = @WA_MAPL-PLNNR AND FLGAT = 1.
+  ENDSELECT.
+
+Select * from PLPO INTO CORRESPONDING FIELDS OF @WA_PLPO WHERE PLNNR = @WA_MAPL-PLNNR AND PLNKN < @WA_PLFL-BKNT2 AND PLNKN > @WA_PLFL-BKNT1 .
+  Stammknoten = WA_PLPO-PLNKN.
+  ENDSELECT.
+
+Select * from PLPO INTO CORRESPONDING FIELDS OF @WA_PLPO WHERE PLNNR = @WA_MAPL-PLNNR AND PLNKN > @WA_PLFL-BKNT2.
+  Parallelknoten = WA_PLPO-PLNKN.
+  ENDSELECT.
+
+WRITE: / 'Weihnachtskranz'.
+ULINE.
+
+* Zeile 1
+WRITE: / '/--->' COLOR = 5 FRAMES OFF.
+WRITE: Stammknoten COLOR = 6.
+WRITE: '---\' COLOR = 5 FRAMES OFF.
+
+* Zeile 2
+WRITE: /'|' COLOR = 5 FRAMES OFF.
+WRITE: (15) Luecke.
+WRITE: 'v' COLOR = 5.
+
+* Zeile 3
+WRITE: / WA_PLFL-BKNT1 COLOR = 6.
+WRITE: (5) Luecke.
+WRITE: WA_PLFL-BKNT2 COLOR = 6.
+
+* Zeile 4
+WRITE: /'|' COLOR = 5 FRAMES OFF.
+WRITE: (15) Luecke.
+WRITE: '^' COLOR = 5.
+
+* Zeile 5
+WRITE: / '\--->' COLOR = 5 FRAMES OFF.
+WRITE: Parallelknoten COLOR = 6.
+WRITE: '---/' COLOR = 5 FRAMES OFF.

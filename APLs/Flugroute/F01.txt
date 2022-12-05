@@ -1,0 +1,53 @@
+*----------------------------------------------------------------------*
+***INCLUDE MZ_MA_IW1978797_APL_F01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form ADD_FLUG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ADD_FLUG .
+  DATA ADDED_SLT_ID TYPE FLUG_TC_TYPE-SCHLITTEN_ID.
+ CLEAR ADDED_SLT_ID.
+
+ DATA ADDED_FLG_NR TYPE FLUG_TC_TYPE-FLUGNR.
+ CLEAR ADDED_FLG_NR.
+
+ DATA MAX_STOPP_KM TYPE FLUG_TC_TYPE-STOPP_KM.
+ CLEAR MAX_STOPP_KM.
+
+ SELECT MAX( STOPP_KM ) FROM ZMAIW1978797FLGD INTO @MAX_STOPP_KM WHERE SCHLITTEN_ID = @ADD_FLUG_WA-SCHLITTEN_ID.
+
+ SELECT SINGLE SCHLITTEN_ID FROM ZMAIW1978797FLGD INTO @ADDED_SLT_ID WHERE SCHLITTEN_ID = @ADD_FLUG_WA-SCHLITTEN_ID.
+
+ SELECT SINGLE FLUGNR FROM ZMAIW1978797FLGD INTO @ADDED_FLG_NR WHERE FLUGNR = @ADD_FLUG_WA-FLUGNR.
+*Check Flugnummer
+ IF ADD_FLUG_WA-FLUGNR = '' OR ADDED_FLG_NR <> ''.
+ MESSAGE 'Geben Sie eine Flugnummer an!' TYPE 'I'.
+*Check Schlitten-ID
+ ELSEIF ADD_FLUG_WA-SCHLITTEN_ID = ''.
+ MESSAGE 'Bitte eine Schlitten-ID angeben.' TYPE 'I'.
+ ELSEIF ADDED_SLT_ID = ''.
+ MESSAGE 'Für die Schlitten-ID: "' && ADD_FLUG_WA-SCHLITTEN_ID && '"existiert kein gültiger Schlitten.' TYPE 'I'.
+
+*Check Km-Stand
+ ELSEIF MAX_STOPP_KM > ADD_FLUG_WA-START_KM.
+   MESSAGE 'Start-Kilometerstand kann nicht geringer als letzter STOPP-KMStand sein: "' && MAX_STOPP_KM  TYPE 'I'.
+ ELSEIF ADD_FLUG_WA-START_KM = '' OR ADD_FLUG_WA-STOPP_KM = ''.
+   MESSAGE 'KM-Angaben unvollstädngig' TYPE 'I'.
+ ELSEIF ADD_FLUG_WA-START_KM > ADD_FLUG_WA-STOPP_KM .
+   MESSAGE 'Start-KM größer STOPP-KM?!' TYPE 'I'.
+
+*Check Datum
+ ELSEIF ADD_FLUG_WA-START_DAT = 0 OR ADD_FLUG_WA-STOPP_DAT = 0.
+ MESSAGE 'Ergänzen Sie Start oder STOPP Datum!' TYPE 'I'.
+ ELSEIF ADD_FLUG_WA-START_DAT > ADD_FLUG_WA-STOPP_DAT.
+ MESSAGE 'Startdatum kann nicht nach dem STOPPdatum liegen!' TYPE 'I'.
+ ELSE.
+   INSERT ZMAIW1978797FLGD FROM ADD_FLUG_WA.
+   LEAVE TO SCREEN 200.
+ENDIF.
+ENDFORM.

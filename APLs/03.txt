@@ -1,0 +1,158 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1976950102
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1976950102.
+
+
+* User-Input
+PARAMETERS: MIN_DEP TYPE i OBLIGATORY,
+            MAX_DEP TYPE i OBLIGATORY,
+            MIN_CHLD TYPE i OBLIGATORY,
+            MAX_CHLD TYPE i OBLIGATORY.
+
+DATA(o_rand) = cl_abap_random=>create( cl_abap_random=>seed( ) ).
+
+* CLASS NODE
+CLASS NODE DEFINITION.
+  PUBLIC SECTION.
+    DATA PARENT TYPE REF TO NODE.
+    DATA DEPTH TYPE i.
+    DATA CHILDREN TYPE TABLE OF REF TO NODE.
+
+    METHODS CONSTRUCTOR
+      IMPORTING
+        PARENT TYPE REF TO NODE OPTIONAL
+        DEPTH TYPE i.
+    METHODS SHOW_TREE_VIEW.
+
+  PROTECTED SECTION.
+    METHODS ADD_CHILDREN.
+    METHODS DRAW.
+ENDCLASS.
+
+* CLASS STAR
+CLASS STAR DEFINITION INHERITING FROM NODE.
+  PROTECTED SECTION.
+    METHODS DRAW REDEFINITION.
+ENDCLASS.
+
+* CLASS BALL
+CLASS BALL DEFINITION INHERITING FROM NODE.
+  PROTECTED SECTION.
+    METHODS DRAW REDEFINITION.
+ENDCLASS.
+
+* IMPLEMENTATION NODE
+CLASS NODE IMPLEMENTATION.
+  METHOD CONSTRUCTOR.
+    ME->PARENT = PARENT.
+    ME->DEPTH = DEPTH.
+    IF ME->PARENT IS INITIAL.
+      ME->ADD_CHILDREN( ).
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD ADD_CHILDREN.
+    DATA(NUMBER_OF_CHILDREN) = o_rand->intinrange( low = MIN_CHLD high = MAX_CHLD ).
+
+    DO NUMBER_OF_CHILDREN TIMES.
+      DATA(IS_NODE) = o_rand->intinrange( low = 0 high = 1 ).
+
+      IF DEPTH + 1 < MIN_DEP.
+        IS_NODE = 1.
+      ENDIF.
+      IF DEPTH + 1 >= MAX_DEP.
+        IS_NODE = 0.
+      ENDIF.
+
+      DATA CHILD TYPE REF TO NODE.
+
+      IF IS_NODE = 1.
+        CHILD = NEW NODE( PARENT = ME
+                          DEPTH = ME->DEPTH + 1  ).
+        CALL METHOD CHILD->ADD_CHILDREN( ).
+      ELSE.
+        DATA(IS_BALL) = o_rand->intinrange( low = 0 high = 1 ).
+        IF IS_BALL = 1.
+          CHILD = NEW BALL( PARENT = ME
+                            DEPTH = ME->DEPTH + 1  ).
+        ELSE.
+          CHILD = NEW STAR( PARENT = ME
+                            DEPTH = ME->DEPTH + 1  ).
+        ENDIF.
+      ENDIF.
+      APPEND CHILD TO CHILDREN.
+    ENDDO.
+  ENDMETHOD.
+
+  METHOD SHOW_TREE_VIEW.
+    DATA(HORIZONTAL_DISTANCE) = 15.
+    DATA(POS) = nmax( val1 = ( HORIZONTAL_DISTANCE + 15 ) * ( ME->DEPTH - 2 ) + 2  val2 = 1 ).
+    POSITION POS.
+
+    IF ME->PARENT IS NOT INITIAL.
+      DO HORIZONTAL_DISTANCE TIMES.
+        WRITE '-' NO-GAP.
+      ENDDO.
+    ENDIF.
+
+*        "save the values needed for writing the vertical lines later
+    DATA(START_LINE) = sy-linno.
+    POS = sy-colno.
+
+    ME->DRAW( ).
+
+    DATA CHILD TYPE REF TO NODE.
+    DATA(LAST_CHILD_START_LINE) = sy-linno.
+    DATA(LAST_CHILD_LAST_LINE) = sy-linno.
+
+*        "output all the children
+    LOOP AT ME->CHILDREN INTO CHILD.
+      LAST_CHILD_START_LINE = sy-linno.
+      CHILD->SHOW_TREE_VIEW( ).
+      LAST_CHILD_LAST_LINE = sy-linno.
+      SKIP 2.
+    ENDLOOP.
+
+*        "write all the vertical lines (connecting this node to its parent node)
+    DATA(CUR_LINE) = START_LINE.
+    WHILE CUR_LINE < LAST_CHILD_START_LINE.
+      ADD 1 TO CUR_LINE.
+      SKIP TO LINE CUR_LINE.
+      POSITION POS.
+      WRITE '|' NO-GAP.
+    ENDWHILE.
+
+*        "skip to the last written line of this node and its children, so the next output will be after that
+    SKIP TO LINE LAST_CHILD_LAST_LINE.
+  ENDMETHOD.
+
+  METHOD DRAW.
+    WRITE: '+' NO-GAP.
+  ENDMETHOD.
+ENDCLASS.
+
+* IMPLEMENTATION STAR
+CLASS STAR IMPLEMENTATION.
+  METHOD DRAW.
+    FORMAT COLOR = 7 INVERSE ON.
+    WRITE: '*' NO-GAP.
+    FORMAT COLOR OFF.
+  ENDMETHOD.
+ENDCLASS.
+
+* IMPLEMENTATION BALL
+CLASS BALL IMPLEMENTATION.
+  METHOD DRAW.
+    FORMAT COLOR = 6 INVERSE ON.
+    WRITE: 'o' NO-GAP.
+    FORMAT COLOR OFF.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(ROOT) = NEW NODE( DEPTH = 1 ).
+  SKIP 2.
+  ROOT->SHOW_TREE_VIEW( ).

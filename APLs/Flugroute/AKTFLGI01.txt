@@ -1,0 +1,30 @@
+*----------------------------------------------------------------------*
+***INCLUDE MZ_MA_IW1978797_APL_AKTFLGI01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  AKTUALISIEREN_IT_FLG  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE AKTUALISIEREN_IT_FLG INPUT.
+
+   MOVE-CORRESPONDING ZMAIW1978797FLGD to FLUG_WA.
+ MODIFY FLUG_IT_TC FROM FLUG_WA INDEX FLUEGE_TC-CURRENT_LINE.
+
+ DATA ADDED_SLT_ID TYPE FLUG_TC_TYPE-SCHLITTEN_ID.
+ CLEAR ADDED_SLT_ID.
+
+ DATA MAX_STOPP_KM TYPE FLUG_TC_TYPE-STOPP_KM.
+ CLEAR MAX_STOPP_KM.
+
+ SELECT MAX( STOPP_KM ) FROM ZMAIW1978797FLGD INTO @MAX_STOPP_KM
+ WHERE SCHLITTEN_ID = @FLUG_WA-SCHLITTEN_ID AND FLUGNR <> @FLUG_WA-FLUGNR AND FLUGNR < @FLUG_WA-FLUGNR.
+SELECT SINGLE SCHLITTEN_ID FROM ZMAIW1978797FLGD INTO @ADDED_SLT_ID WHERE SCHLITTEN_ID = @FLUG_WA-SCHLITTEN_ID.
+
+
+MODIFY ZMAIW1978797FLGD FROM FLUG_WA.
+ IF ok_code <> 'VIEW_ADD_FLG'.
+ MESSAGE 'FLUG wurde erfolgreich aktualisiert' TYPE 'S'.
+ ENDIF.
+
+ENDMODULE.

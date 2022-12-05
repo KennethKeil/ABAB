@@ -1,0 +1,39 @@
+*----------------------------------------------------------------------*
+***INCLUDE MZ_MA_IW1978797_APL_F02.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form MZMA_IW1978797_APL_ADD_SCHLT01
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ADD_SCHLITTEN .
+
+   DATA ADDED_KNZ TYPE SCHLITTEN_TC_TYPE-KENNZEICHEN.
+   CLEAR ADDED_KNZ.
+   DATA ADDED_ID TYPE SCHLITTEN_TC_TYPE-SCHLITTEN_ID.
+   CLEAR ADDED_ID.
+
+SELECT SINGLE KENNZEICHEN FROM ZMAIW1978797SLTN INTO @ADDED_KNZ WHERE KENNZEICHEN = @ADD_SCHLITTEN_WA-KENNZEICHEN.
+SELECT SINGLE SCHLITTEN_ID FROM ZMAIW1978797SLTN INTO @ADDED_ID WHERE SCHLITTEN_ID = @ADD_SCHLITTEN_WA-SCHLITTEN_ID.
+
+*check id
+IF ADD_SCHLITTEN_WA-SCHLITTEN_ID = ''.
+ MESSAGE 'Geben Sie eine eindeutige Schlitten-ID an' TYPE 'I'.
+ELSEIF ADDED_ID <> ''.
+ MESSAGE 'ID: "' && ADDED_ID && '" existiert bereits.' && CL_ABAP_CHAR_UTILITIES=>NEWLINE && 'Wählen Sie eine andere ID!' TYPE 'I'.
+*check knz
+ELSEIF ADDED_KNZ <> ''.
+ MESSAGE 'Kennzeichen: "' && ADDED_KNZ && '" bereits vergeben.' && CL_ABAP_CHAR_UTILITIES=>NEWLINE && 'Wählen Sie ein anderes KNZ.' TYPE 'I'.
+ELSEIF ADD_SCHLITTEN_WA-KENNZEICHEN = ''.
+ MESSAGE 'Bitte vergeben sie ein Kennzeichen für den Schlitten' TYPE'I'.
+
+*checks ok
+  ELSE.
+  INSERT ZMAIW1978797SLTN FROM ADD_SCHLITTEN_WA.
+  MESSAGE 'Schlitten angelegt' TYPE 'S'.
+  LEAVE TO SCREEN 300.
+  ENDIF.
+ENDFORM.

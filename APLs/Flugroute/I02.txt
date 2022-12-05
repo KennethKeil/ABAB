@@ -1,0 +1,25 @@
+*----------------------------------------------------------------------*
+***INCLUDE MZ_MA_IW1978797_APL_I02.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+
+CASE ok_code_saved.
+ WHEN 'SHOW_FLG'.
+ LEAVE TO SCREEN 200.
+ WHEN 'ADD_FLG'.
+ LEAVE TO SCREEN 400.
+ WHEN 'SHOW_SLTN'.
+ LEAVE TO SCREEN 300.
+ WHEN 'ADD_SLTN'.
+ LEAVE TO SCREEN 500.
+ WHEN 'BACK' OR '%EX' OR 'RW'.
+ LEAVE TO SCREEN 0.
+ ENDCASE.
+
+
+ENDMODULE.
