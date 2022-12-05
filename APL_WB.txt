@@ -1,0 +1,221 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1980411_OO_WB
+*&---------------------------------------------------------------------*
+*& BIS II APL 2021
+*& OOP - Christmas Tree
+*& by Martin Freiberger
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1980411_OO_WB.
+
+PARAMETERS: MINDEPTH TYPE i OBLIGATORY DEFAULT 2,
+            MAXDEPTH TYPE i OBLIGATORY DEFAULT 2,
+            MINCHILD TYPE i OBLIGATORY DEFAULT 2,
+            MAXCHILD TYPE i OBLIGATORY DEFAULT 2.
+
+" define constants
+
+DATA(COLOR_ORB) = 6.
+DATA(COLOR_STAR) = 3.
+DATA(H_LINE_LENGHT) = 5.
+DATA(BRANCH_SYMBOL) = '-'.
+
+"get those rnd number generators
+
+DATA(SEED_RNG) = cl_abap_random=>create( CONV i( sy-uzeit ) ).
+
+
+CLASS Node DEFINITION.
+  PUBLIC SECTION.
+    METHODS CONSTRUCTOR
+      IMPORTING
+        PAYLOAD TYPE c.
+
+    DATA FIRSTCHILD TYPE REF TO NODE.
+    DATA SIBLING TYPE REF TO NODE.
+
+    DATA KEY TYPE c LENGTH 1. " represents orb or star
+
+ENDCLASS.
+
+CLASS Node IMPLEMENTATION.
+ METHOD CONSTRUCTOR.
+   ME->KEY = PAYLOAD.
+
+   ENDMETHOD.
+ENDCLASS.
+
+CLASS BinaryTree DEFINITION.
+  PUBLIC SECTION.
+
+    METHODS CONSTRUCTOR IMPORTING
+      MIN_DEPTH TYPE i
+      MAX_DEPTH TYPE i
+      MIN_CHILDS TYPE i
+      MAX_CHILDS TYPE i.
+
+
+    METHODS DISPLAY IMPORTING
+     CURRENT_NODE TYPE REF TO NODE
+     INDENT TYPE STRING OPTIONAL.
+
+  METHODS CreateNode
+  IMPORTING
+    PARENT_NODE TYPE REF TO NODE
+    CURRENT_LEVEL TYPE i DEFAULT 0
+    ALLOWED_SIBLINGS TYPE i DEFAULT 0.
+
+  DATA MIN_DEPTH TYPE i.
+  DATA MAX_DEPTH TYPE i.
+  DATA MIN_CHILDS TYPE i.
+  DATA MAX_CHILDS TYPE i.
+  DATA ROOT TYPE REF TO NODE.
+  DATA NODE_COUNT TYPE i.
+
+ENDCLASS.
+
+CLASS BinaryTree IMPLEMENTATION.
+  METHOD CONSTRUCTOR.
+    ME->ROOT =  NEW NODE( PAYLOAD = 'r' ).
+
+    ME->MIN_DEPTH = MIN_DEPTH.
+    ME->MAX_DEPTH = MAX_DEPTH.
+    ME->MIN_CHILDS = MIN_CHILDS.
+    ME->MAX_CHILDS = MAX_CHILDS.
+    NODE_COUNT = 0.
+
+   ENDMETHOD.
+
+   METHOD DISPLAY .
+
+      IF ( CURRENT_NODE IS INITIAL ). RETURN. ENDIF.
+      DATA(CURRENT) = CURRENT_NODE.
+
+      WHILE  CURRENT IS NOT INITIAL.
+
+
+
+        DATA(COLORED_KEY) = CURRENT->KEY.
+
+        FORMAT COLOR OFF.
+        WRITE: INDENT &&  '|--- ' .
+        IF CURRENT->KEY = 'O'.
+         FORMAT
+           COLOR = COLOR_ORB
+           INVERSE ON.
+        ELSEIF CURRENT->KEY = '*'.
+          FORMAT
+            COLOR = COLOR_STAR
+            INVERSE ON.
+         ENDIF.
+
+        WRITE: COLORED_KEY .
+        WRITE: / ''.
+
+
+
+        ME->NODE_COUNT = ME->NODE_COUNT + 1.
+
+
+
+      IF ( CURRENT->FIRSTCHILD IS NOT INITIAL ).
+
+
+
+        ME->DISPLAY( CURRENT_NODE = CURRENT->FIRSTCHILD INDENT = |\|    | && |{ INDENT }|  ).
+      ENDIF.
+
+      CURRENT = CURRENT->SIBLING.
+
+
+      ENDWHILE.
+
+   ENDMETHOD.
+
+
+
+  METHOD CreateNode.
+
+    IF ( PARENT_NODE IS INITIAL ). Return.
+    ENDIF.
+
+    DATA(DEPTH_RNG) = cl_abap_random_int=>create( seed = SEED_RNG->intinrange( low = 1 high = 999999 )
+                                                    min = MINDEPTH
+                                                    max = MAXDEPTH ).
+
+    DATA(DEPTH_NUMBER) = DEPTH_RNG->get_next( ).
+
+    "generate levels
+    IF ( CURRENT_LEVEL < DEPTH_NUMBER ).
+      "due to abap rng impl we need to make sure, that on each recursion step a new seed and rnd number is generated
+
+      DATA(SIBLING_RNG) = cl_abap_random_int=>create( seed = SEED_RNG->intinrange( low = 1 high = 999999 )
+                                                min = MINCHILD
+                                                max = MAXCHILD ).
+      DATA(PAYLOAD_RNG) = cl_abap_random_int=>create( seed = SEED_RNG->intinrange( low = 1 high = 999999 )
+                                                    min = 1
+                                                    max = 2 ).
+      DATA(PAYLOAD_NUMBER) = PAYLOAD_RNG->GET_NEXT( ).
+
+      PARENT_NODE->FIRSTCHILD = NEW NODE( COND #( WHEN PAYLOAD_NUMBER EQ 1
+                                                  THEN 'O'
+                                                  ELSE '*' ) ).
+
+
+      ME->CreateNode( PARENT_NODE = PARENT_NODE->FIRSTCHILD
+                      CURRENT_LEVEL = CURRENT_LEVEL + 1
+                      ALLOWED_SIBLINGS = SIBLING_RNG->GET_NEXT( ) - 1 ).
+    ENDIF.
+
+    "generate children of parentNode
+    IF ( ALLOWED_SIBLINGS > 0 ).
+
+      DATA(PAYLOAD_RNG_SIBLING) = cl_abap_random_int=>create( seed = SEED_RNG->intinrange( low = 1 high = 999999 )
+                                                    min = 1
+                                                    max = 2 ).
+      DATA(SIBLING_PAYLOAD) = PAYLOAD_RNG_SIBLING->GET_NEXT( ).
+      PARENT_NODE->SIBLING = NEW NODE( COND #( WHEN SIBLING_PAYLOAD EQ 1
+                                                  THEN 'O'
+                                                  ELSE '*' ) ).
+
+      ME->CreateNode( PARENT_NODE = PARENT_NODE->SIBLING
+                      CURRENT_LEVEL = CURRENT_LEVEL
+                      ALLOWED_SIBLINGS = ALLOWED_SIBLINGS - 1 ).
+    ENDIF.
+
+  ENDMETHOD.
+
+ ENDCLASS.
+
+
+
+START-OF-SELECTION.
+  "check if the user input intervals are valid
+  IF MINCHILD > MAXCHILD
+    OR MINDEPTH > MAXDEPTH
+    OR MINCHILD <= 0
+    OR MAXCHILD <= 0
+    OR MINDEPTH <= 0
+    OR MAXDEPTH <= 0.
+
+    FORMAT
+      COLOR 6
+      INTENSIFIED ON.
+    WRITE: 'Bitte geben Sie gültige Werte für die Minima und Maxima ein.'.
+  ELSE.
+
+
+      DATA(TREE) = NEW BinaryTree(
+                        MIN_DEPTH = MINDEPTH
+                        MAX_DEPTH = MAXDEPTH
+                        MIN_CHILDS = MINCHILD
+                        MAX_CHILDS = MAXCHILD ).
+
+      TREE->CreateNode( PARENT_NODE = TREE->ROOT ).
+
+
+      SKIP: 2.
+      TREE->DISPLAY( TREE->ROOT ).
+      SKIP: 2.
+      WRITE: 'Anzahl der gezeigten Knoten: ' && | { TREE->NODE_COUNT } |.
+
+  ENDIF.
