@@ -1,0 +1,63 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1980411060
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1980411060.
+
+DATA: WA_LFA1 TYPE LFA1,
+      WA_BSXK TYPE BSAK.
+
+AT LINE-SELECTION."Globaler Ereignisblock
+  CASE sy-lsind.
+    "Unterscheidung nach Listenindex,
+    WHEN 1. "was angezeigt werden soll:
+      CHECK NOT WA_LFA1-LIFNR IS INITIAL.
+      PERFORM KreditorenRechnungen
+      USING WA_LFA1-LIFNR.
+      CLEAR WA_LFA1-LIFNR.
+ENDCASE.
+
+START-OF-SELECTION.
+
+  WRITE:
+    (14) 'Kreditorennummer',
+    (35) 'Name des Kreditors',
+    (20) 'Ort des Kreditors',
+    (15) 'Name des Anlegers',
+    (11) 'Anlagedatum'.
+  ULINE.
+
+SELECT * FROM LFA1 INTO CORRESPONDING FIELDS OF @WA_LFA1
+  WHERE LIFNR LIKE 'K%'.
+  WRITE:/(14) WA_LFA1-LIFNR,
+         (35) WA_LFA1-NAME1,
+         (20) WA_LFA1-ORT01,
+         (15) WA_LFA1-ERNAM,
+         (11) WA_LFA1-ERDAT.
+  HIDE WA_LFA1-LIFNR.
+
+ENDSELECT.
+CLEAR WA_LFA1-LIFNR.
+
+FORM KreditorenRechnungen USING MY_LIFNR.
+WRITE:/1 'Rechnungen von Kreditor', MY_LIFNR.
+WRITE:/1 'BelegNr', 12 'BuchDt', 23 'Betrag', 39 'Belegart'.
+  SELECT BELNR, BUDAT, DMBTR, BLART
+    FROM BSIK INTO CORRESPONDING FIELDS OF @WA_BSXK
+    WHERE LIFNR = @MY_LIFNR AND BLART EQ 'KR'.
+      WRITE:/(10) WA_BSXK-BELNR,
+      (13) WA_BSXK-BUDAT,
+      (14) WA_BSXK-DMBTR,
+      (28) WA_BSXK-BLART.
+    ENDSELECT.
+  SELECT BELNR, BUDAT, DMBTR, BLART
+    FROM BSAK INTO CORRESPONDING FIELDS OF @WA_BSXK
+    WHERE LIFNR = @MY_LIFNR AND BLART EQ 'KR'.
+      WRITE:/(10) WA_BSXK-BELNR,
+      (13) WA_BSXK-BUDAT,
+      (14) WA_BSXK-DMBTR,
+      (28) WA_BSXK-BLART.
+  ENDSELECT.
+
+ENDFORM.

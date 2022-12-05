@@ -1,0 +1,75 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1980411030
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1980411030.
+
+NODES: LFA1, BSIK.
+
+DATA SumPayments TYPE BSIK-DMBTR VALUE 0.
+DATA SumOutstanding TYPE BSIK-DMBTR VALUE 0.
+DATA count TYPE i VALUE 0.
+
+
+START-OF-SELECTION.
+  ULINE.
+  WRITE:
+  (14) 'Kreditorennummer',
+  (35) 'Name des Kreditors',
+  (15) 'Name des Anlegers'.
+
+  ULINE.
+GET LFA1.
+  count = 0.
+  SumPayments = 0.
+  SumOutstanding = 0.
+
+  WRITE:
+  (14) LFA1-LIFNR,
+  (35) LFA1-NAME1,
+  (15) LFA1-ERNAM.
+  ULINE.
+
+
+GET BSIK.
+
+  IF BSIK-BLART EQ 'KR'.
+    IF count = 0.
+      WRITE:
+        (34) 'Belegnummer der Kreditorenrechnung',
+        (13) 'Buchungsdatum',
+        (14) 'Buchungsbetrag',
+        (28) 'Belegnummer der Gegenbuchung',
+        (13) 'Buchungsdatum'.
+    ENDIF.
+
+    WRITE:/(34) BSIK-BELNR,
+      (13) BSIK-BUDAT,
+      (14) BSIK-DMBTR,
+      (28) BSIK-AUGBL,
+      (13) BSIK-AUGDT.
+    IF BSIK-AUGBL NE ''.
+      SumPayments = SumPayments + BSIK-DMBTR.
+    ELSE.
+      SumOutstanding = SumOutstanding + BSIK-DMBTR .
+    ENDIF.
+    ADD 1 TO count.
+  ENDIF.
+
+GET LFA1 LATE.
+IF count > 0.
+  WRITE:
+    (23) 'Summe der Zahlungen' ,
+    'Summe der offenen Posten'.
+
+  WRITE:/(23) SumPayments,
+    SumOutstanding.
+ELSE.
+  WRITE:
+    'Keine Buchungssätze vorhanden.'.
+ENDIF.
+ULINE.
+END-OF-SELECTION.
+
+ "LIFNR 10, NAME1 35, ORT01 35, ERNAM 12, ERDAT 8, KUNNR 10

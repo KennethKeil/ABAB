@@ -1,0 +1,32 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1980411022
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1980411022.
+
+
+DATA KREDITOR TYPE LFA1.
+PARAMETERS P_Ort TYPE LFA1-ORT01.
+
+
+START-OF-SELECTION.
+
+  WRITE:
+    (14) 'Kreditorennummer',
+    (35) 'Name des Kreditors',
+    (20) 'Ort des Kreditors',
+    (15) 'Name des Anlegers',
+    (11) 'Anlagedatum',
+    (15) 'Debitorennummer'.
+  ULINE.
+
+SELECT * FROM LFA1 INTO CORRESPONDING FIELDS OF @KREDITOR
+  WHERE ORT01 = @P_Ort.
+  WRITE:/(14) KREDITOR-LIFNR,
+         (35) KREDITOR-NAME1,
+         (20) KREDITOR-ORT01,
+         (15) KREDITOR-ERNAM,
+         (11) KREDITOR-ERDAT,
+         (15) KREDITOR-KUNNR.
+ENDSELECT.

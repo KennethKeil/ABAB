@@ -1,0 +1,102 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1980411032
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1980411032.
+
+DATA KREDITORENDB TYPE LFA1.
+"PARAMETERS KREDITOR TYPE LFA1-LIFNR.
+
+DATA INVOICE TYPE BSIK.
+"PARAMETERS OUTSTANDING_ITEM TYPE BSIK-DMBTR.
+
+
+
+
+
+DATA SumPayments TYPE BSIK-DMBTR VALUE 0.
+DATA SumOutstanding TYPE BSIK-DMBTR VALUE 0.
+DATA count TYPE i VALUE 0.
+
+
+START-OF-SELECTION.
+  ULINE.
+  WRITE:
+  (14) 'Kreditorennummer',
+  (35) 'Name des Kreditors',
+  (15) 'Name des Anlegers'.
+
+  ULINE.
+SELECT LIFNR,NAME1,ERNAM
+  FROM LFA1
+  INTO CORRESPONDING FIELDS OF @KREDITORENDB
+  WHERE LIFNR LIKE 'K%'.
+
+  count = 0.
+  SumPayments = 0.
+  SumOutstanding = 0.
+
+  WRITE:
+    (14) KREDITORENDB-LIFNR,
+    (35) KREDITORENDB-NAME1,
+    (15) KREDITORENDB-ERNAM.
+  ULINE.
+
+  SELECT BELNR, BUDAT, DMBTR, AUGBL, AUGDT
+    FROM BSIK
+    INTO CORRESPONDING FIELDS OF @INVOICE
+    WHERE LIFNR = @KREDITORENDB-LIFNR AND BLART EQ 'KR'.
+    SumOutstanding = SumOutstanding + INVOICE-DMBTR.
+
+    IF count = 0.
+      WRITE:
+        (34) 'Belegnummer der Kreditorenrechnung',
+        (13) 'Buchungsdatum',
+        (14) 'Buchungsbetrag',
+        (28) 'Belegnummer der Gegenbuchung',
+        (13) 'Buchungsdatum'.
+    ENDIF.
+    WRITE:/(34) INVOICE-BELNR,
+      (13) INVOICE-BUDAT,
+      (14) INVOICE-DMBTR,
+      (28) INVOICE-AUGBL,
+      (13) INVOICE-AUGDT.
+    ADD 1 TO count.
+  ENDSELECT.
+  SELECT BELNR, BUDAT, DMBTR, AUGBL, AUGDT
+    FROM BSAK
+    INTO CORRESPONDING FIELDS OF @INVOICE
+    WHERE LIFNR = @KREDITORENDB-LIFNR AND BLART EQ 'KR'.
+    IF count = 0.
+      WRITE:
+        (34) 'Belegnummer der Kreditorenrechnung',
+        (13) 'Buchungsdatum',
+        (14) 'Buchungsbetrag',
+        (28) 'Belegnummer der Gegenbuchung',
+        (13) 'Buchungsdatum'.
+    ENDIF.
+    WRITE:/(34) INVOICE-BELNR,
+      (13) INVOICE-BUDAT,
+      (14) INVOICE-DMBTR,
+      (28) INVOICE-AUGBL,
+      (13) INVOICE-AUGDT.
+
+    SumPayments = SumPayments + INVOICE-DMBTR.
+
+    ADD 1 TO count.
+
+  ENDSELECT.
+  IF count > 0.
+    WRITE:
+      (23) 'Summe der Zahlungen' ,
+      'Summe der offenen Posten'.
+
+    WRITE:/(23) SumPayments,
+      SumOutstanding.
+    ELSE.
+    WRITE:
+      'Keine Buchungssätze vorhanden.'.
+ENDIF.
+ULINE.
+ENDSELECT.

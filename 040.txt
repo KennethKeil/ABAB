@@ -1,0 +1,95 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1980411040
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1980411040.
+
+Nodes: MKPF, MSEG.
+
+Field-GROUPS: HEADER, KOPF, SEGMENT.
+
+START-OF-SELECTION.
+  INSERT:
+    MKPF-MBLNR
+    MKPF-BUDAT
+    MSEG-ZEILE
+    INTO HEADER,
+    MKPF-USNAM
+    INTO KOPF,
+    MSEG-MATNR
+    MSEG-MENGE
+    INTO SEGMENT.
+
+GET MKPF.
+  CLEAR MSEG-ZEILE WITH NULL.
+    EXTRACT KOPF.
+GET MSEG.
+    EXTRACT SEGMENT.
+
+
+END-OF-SELECTION.
+    SORT BY
+      MKPF-BUDAT DESCENDING
+      MKPF-MBLNR ASCENDING
+      MSEG-ZEILE ASCENDING.
+
+    TYPES: BEGIN OF MATERIAL_AMOUNT,
+      MATNR LIKE MSEG-MATNR,
+      MENGE LIKE MSEG-MENGE,
+      END OF MATERIAL_AMOUNT.
+
+    DATA:
+      MATERIAL TYPE MATERIAL_AMOUNT,
+      MATERIAL_TABLE   TYPE SORTED TABLE OF MATERIAL_AMOUNT
+        WITH UNIQUE KEY MATNR.
+
+    LOOP.
+      AT FIRST.
+        WRITE: / 'Materialbelege'.
+        ULINE.
+      ENDAT.
+
+      AT KOPF
+        WITH SEGMENT.
+        WRITE: /'Kopf: ',
+        MKPF-MBLNR,
+        MKPF-BUDAT,
+        MKPF-USNAM.
+      ENDAT.
+
+      AT SEGMENT.
+        WRITE: / 'Segment: ',
+        MSEG-MATNR,
+        MSEG-MENGE,
+        MSEG-ZEILE.
+
+        READ TABLE MATERIAL_TABLE INTO MATERIAL
+        WITH TABLE KEY MATNR = MSEG-MATNR.
+
+        IF sy-subrc <> 0.
+          MATERIAL-MATNR = MSEG-MATNR.
+          MATERIAL-MENGE = MSEG-MENGE.
+          INSERT MATERIAL INTO TABLE MATERIAL_TABLE.
+        ELSE.
+          MATERIAL-MENGE = MATERIAL-MENGE + MSEG-MENGE.
+          MODIFY TABLE MATERIAL_TABLE FROM MATERIAL.
+        ENDIF.
+      ENDAT.
+
+      AT LAST.
+        ULINE.
+        WRITE / '[DEBUG] EndOfLoop'.
+      ENDAT.
+    ENDLOOP.
+
+    LOOP
+      AT MATERIAL_TABLE
+      INTO MATERIAL.
+      WRITE: / MATERIAL-MATNR, MATERIAL-MENGE.
+
+    ENDLOOP.
+
+
+
+ "LIFNR 10, NAME1 35, ORT01 35, ERNAM 12, ERDAT 8, KUNNR 10

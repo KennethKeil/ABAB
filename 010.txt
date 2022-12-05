@@ -1,0 +1,30 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MA_IW1980411010
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_MA_IW1980411010.
+
+NODES LFA1.
+
+START-OF-SELECTION.
+  ULINE.
+  WRITE:
+  (14) 'Kreditorennummer',
+  (35) 'Name des Kreditors',
+  (20) 'Ort des Kreditors',
+  (15) 'Name des Anlegers',
+  (11) 'Anlagedatum'.
+  ULINE.
+GET LFA1.
+  WRITE:
+  (14) LFA1-LIFNR,
+  (35) LFA1-NAME1,
+  (20) LFA1-ORT01,
+  (15) LFA1-ERNAM,
+  (11) LFA1-ERDAT.
+END-OF-SELECTION.
+  ULINE.
+
+
+ "LIFNR 10, NAME1 35, ORT01 35, ERNAM 12, ERDAT 8, KUNNR 10
